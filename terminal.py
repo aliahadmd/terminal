@@ -13,7 +13,7 @@ from utils.command_processor import CommandProcessor, SSHClient
 class Terminal(ThemedTk):
     def __init__(self):
         super().__init__(theme="arc")
-        self.title("Advanced Windows Terminal")
+        self.title("SysTermin Terminal")
         self.geometry("1000x700")
 
         self.current_directory = os.getcwd()
