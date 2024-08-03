@@ -33,8 +33,41 @@ class CommandProcessor:
         return None
 
     def get_possible_completions(self, command, current_directory):
-        all_commands = os.listdir(current_directory) + ["cd", "exit"]
-        return [cmd for cmd in all_commands if cmd.startswith(command)]
+        parts = command.split()
+        if len(parts) == 1:
+            # Complete command names
+            all_commands = self.get_all_commands() + os.listdir(current_directory)
+            return [cmd for cmd in all_commands if cmd.startswith(parts[0])]
+        else:
+            # Complete file paths and command options
+            if parts[0] in ['cd', 'dir', 'type']:
+                return self.complete_file_path(parts[-1], current_directory)
+            else:
+                return self.complete_command_options(parts[0], parts[-1])
+    
+    def get_all_commands(self):
+        try:
+            output = subprocess.check_output("powershell.exe Get-Command", shell=True, text=True)
+            return [line.split()[0] for line in output.splitlines()[3:]]
+        except subprocess.CalledProcessError:
+            return []
+
+    def complete_file_path(self, partial_path, current_directory):
+        full_path = os.path.join(current_directory, partial_path)
+        dir_name = os.path.dirname(full_path)
+        file_name = os.path.basename(full_path)
+        try:
+            return [os.path.join(dir_name, f) for f in os.listdir(dir_name) if f.startswith(file_name)]
+        except OSError:
+            return []
+
+    def complete_command_options(self, command, partial_option):
+        try:
+            output = subprocess.check_output(f"powershell.exe Get-Help {command}", shell=True, text=True)
+            options = [line.split()[0] for line in output.splitlines() if line.strip().startswith('-')]
+            return [opt for opt in options if opt.startswith(partial_option)]
+        except subprocess.CalledProcessError:
+            return []
 
 class SSHClient:
     def __init__(self):
